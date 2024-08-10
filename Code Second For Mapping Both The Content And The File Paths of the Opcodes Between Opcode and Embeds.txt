@@ -1,0 +1,163 @@
+import os
+import numpy as np
+from gensim.models import Word2Vec
+import json
+import re
+
+# Load the pre-trained Word2Vec model
+vocabulary_build_folder = "/content/drive/MyDrive/vocabularybuildfolder2"
+model = Word2Vec.load(os.path.join(vocabulary_build_folder, "word2vec.model"))
+
+# Specify the folder path where your data files are located
+data_folder_path = "/content/drive/MyDrive/theopcoderealoutputwithid"
+
+# Create folders to store the embedded data and mapping
+embedded_data_folder_with_id = "/content/drive/MyDrive/mynewembeds"
+embedded_data_folder_without_id = "/content/drive/MyDrive/fullembeds"
+os.makedirs(embedded_data_folder_with_id, exist_ok=True)
+os.makedirs(embedded_data_folder_without_id, exist_ok=True)
+
+# Create a folder to store the embedded opcode files
+output_embedded_folder = "/content/drive/MyDrive/embedded_opcodes"
+os.makedirs(output_embedded_folder, exist_ok=True)
+
+# Create a dictionary to store the mapping between embedded code and original opcode file
+embedded_to_opcode_mapping = {}
+
+# Function to embed opcodes
+def embed_opcodes(opcodes, model):
+    words = opcodes.split()
+    embedded_opcodes = []
+    for word in words:
+        if word in model.wv:
+            embedded_opcodes.append(model.wv[word])
+    return embedded_opcodes
+
+# Initialize variables to store the current ID and opcodes
+current_id = None
+current_opcodes = ""
+has_id = False  # Initialize has_id to False
+
+# Iterate through all files in the data folder
+for filename in os.listdir(data_folder_path):
+    file_path = os.path.join(data_folder_path, filename)
+
+    # Check if the path is a file
+    if os.path.isfile(file_path) and filename.endswith(".txt"):
+        with open(file_path, "r") as txt_file:
+            lines = txt_file.readlines()
+
+        # Check if the file has an "id"
+        has_id = any(line.startswith('"id"') for line in lines)
+
+        # Iterate through the lines
+        for line in lines:
+            # Remove leading and trailing whitespace
+            line = line.strip()
+
+            # Check if the line starts with '"id"'
+            if line.startswith('"id"'):
+                # If we have encountered a new "id", process the previous data (if any)
+                if current_id is not None:
+                    # Embed opcodes
+                    opcodes_embedded = embed_opcodes(current_opcodes, model)
+
+                    # Convert to a numpy array
+                    opcodes_embedded = np.array(opcodes_embedded)
+
+                    # Determine the appropriate folder based on the presence of "id"
+                    current_folder = embedded_data_folder_with_id if has_id else embedded_data_folder_without_id
+
+                    # Save the embedded opcodes in a single file
+                    embedded_file_path = os.path.join(current_folder, f"{current_id}_embedded.npy")
+                    np.save(embedded_file_path, opcodes_embedded)
+
+                    print(f"Embedded opcodes for ID {current_id} and saved to {embedded_file_path}")
+
+                    # Copy the embedded file to the output folder
+                    output_embedded_file_path = os.path.join(output_embedded_folder, os.path.basename(embedded_file_path))
+                    os.rename(embedded_file_path, output_embedded_file_path)
+
+                    # Store the mapping between embedded code and original opcode file
+                    embedded_to_opcode_mapping[output_embedded_file_path] = file_path
+
+                # Reset current ID and opcodes
+                current_id = line.split(": ")[1].strip('"')
+                current_opcodes = ""
+
+            elif line.startswith('"opcodes"'):
+                # If the line starts with '"opcodes"', it's part of the opcodes
+                current_opcodes += line[len('"opcodes"')+2:]  # +2 to skip ": "
+
+# Process the last data block (if any)
+if current_id is not None:
+    # Embed opcodes
+    opcodes_embedded = embed_opcodes(current_opcodes, model)
+
+    # Convert to a numpy array
+    opcodes_embedded = np.array(opcodes_embedded)
+
+    # Determine the appropriate folder based on the presence of "id"
+    current_folder = embedded_data_folder_with_id if has_id else embedded_data_folder_without_id
+
+    # Save the embedded opcodes in a single file
+    embedded_file_path = os.path.join(current_folder, f"{current_id}_embedded.npy")
+    np.save(embedded_file_path, opcodes_embedded)
+
+    print(f"Embedded opcodes for ID {current_id} and saved to {embedded_file_path}")
+
+    # Copy the embedded file to the output folder
+    output_embedded_file_path = os.path.join(output_embedded_folder, os.path.basename(embedded_file_path))
+    os.rename(embedded_file_path, output_embedded_file_path)
+
+    # Store the mapping between embedded code and original opcode file
+    embedded_to_opcode_mapping[output_embedded_file_path] = file_path
+
+# Save the mapping between embedded code and original opcode file to a JSON file
+mapping_file_path = "/content/drive/MyDrive/embedded_to_opcode_mapping.json"
+with open(mapping_file_path, 'w') as mapping_file:
+    json.dump(embedded_to_opcode_mapping, mapping_file, indent=4)
+
+print(f"Mapping between embedded code and original opcode files saved to {mapping_file_path}")
+
+# Create a folder to store the mapped opcode content
+mapped_opcode_content_folder = "/content/drive/MyDrive/mymappedopcodecontent"
+os.makedirs(mapped_opcode_content_folder, exist_ok=True)
+
+# Function to map opcode content with Solidity understanding
+def map_opcode_content(opcode_content, model):
+    # Tokenize the opcode content into words
+    words = re.findall(r'\b\w+\b', opcode_content)
+
+    # Map each word to Solidity concepts using the Word2Vec model
+    mapped_words = []
+    for word in words:
+        if word in model.wv:
+            # Replace word with mapped concept (you can implement your mapping logic here)
+            mapped_word = model.wv.most_similar(positive=[word], topn=1)[0][0]
+            mapped_words.append(mapped_word)
+        else:
+            # If the word is not in the model's vocabulary, keep it as-is
+            mapped_words.append(word)
+
+    # Join the mapped words back into a string
+    mapped_content = ' '.join(mapped_words)
+
+    return mapped_content
+
+# Iterate through the embedded opcode files and map the content
+for embedded_file, opcode_file in embedded_to_opcode_mapping.items():
+    with open(embedded_file, "rb") as embedded_file:  # Open in binary mode
+        embedded_content = embedded_file.read()
+
+    # Map the embedded content with Solidity understanding
+    mapped_content = map_opcode_content(embedded_content.decode('utf-8', errors='ignore'), model)
+
+       # Save the mapped content in a file
+    mapped_content_file_path = os.path.join(mapped_opcode_content_folder, os.path.basename(embedded_file.name) + "_mapped.txt")
+    with open(mapped_content_file_path, "w") as mapped_file:
+        mapped_file.write(mapped_content)
+
+        print(f"Mapped content for {os.path.basename(embedded_file.name)} saved to {mapped_content_file_path}")
+
+print("Mapping of opcode content to Solidity concepts completed.")

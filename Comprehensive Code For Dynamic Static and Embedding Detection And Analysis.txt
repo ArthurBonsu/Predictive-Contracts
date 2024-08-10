@@ -1,0 +1,639 @@
+import os
+import numpy as np
+from gensim.models import Word2Vec
+import json
+import re
+
+# Compiled solidity source file built into json format 
+PREDICT_1 = "/content/drive/MyDrive/PREDICTIVE WORK TRY/PREDICT1"
+
+# Specify the folder path where your compiled JSON files are located (same) for PREDICT 1
+compiled_json_folder = "/content/drive/MyDrive/PREDICTIVE WORK TRY/PREDICT1"
+
+# Load the pre-trained Word2Vec model
+vocabulary_build_folder = "/content/drive/MyDrive/PREDICTIVE WORK TRY/firstvocabularybuildfolder2"
+model = Word2Vec.load(os.path.join(vocabulary_build_folder, "firstword2vec.model"))
+
+
+# Specify the folder path where your data files(extracted opcodes with id) are located
+data_folder_path = "/content/drive/MyDrive/PREDICTIVE WORK TRY/predictoneopecodes"
+
+# Specify the folder paths to retrieve the already embedded opcodes
+embedded_data_folder_with_id = "/content/drive/MyDrive/PREDICTIVE WORK TRY/firstmynewembeds"
+
+
+# Create a folder to store analysis reports
+analysis_report_folder = "/content/drive/MyDrive/contract_analysis_reports"
+os.makedirs(analysis_report_folder, exist_ok=True)
+
+
+
+# Function to load embedded opcodes from the specified folder
+def load_embedded_opcodes(file_path):
+    return np.load(file_path)
+
+# Function to load compiled JSON file
+def load_compiled_json(file_path):
+    with open(file_path, "r") as json_file:
+        data = json.load(json_file)
+    return data
+
+def analyze_variables(variables):
+    variable_analysis = {
+        "Total Variables": len(variables),
+        "Variable Types": {},
+        "Variable Visibility": {},
+        "Variable Mutability": {},
+        "Variable Scope": {},
+        "Variable Initialization": {},
+        # Add more metrics as needed
+    }
+    
+    # Analyze each variable
+    for variable in variables:
+        variable_name = variable.get("name")
+        variable_type = variable.get("type")
+        variable_visibility = variable.get("visibility")
+        variable_mutability = variable.get("mutability")
+        variable_scope = variable.get("scope")
+        variable_initialized = variable.get("initialized")
+        
+        # Update analysis metrics
+        if variable_type in variable_analysis["Variable Types"]:
+            variable_analysis["Variable Types"][variable_type] += 1
+        else:
+            variable_analysis["Variable Types"][variable_type] = 1
+        
+        if variable_visibility in variable_analysis["Variable Visibility"]:
+            variable_analysis["Variable Visibility"][variable_visibility] += 1
+        else:
+            variable_analysis["Variable Visibility"][variable_visibility] = 1
+        
+        if variable_mutability in variable_analysis["Variable Mutability"]:
+            variable_analysis["Variable Mutability"][variable_mutability] += 1
+        else:
+            variable_analysis["Variable Mutability"][variable_mutability] = 1
+        
+        if variable_scope in variable_analysis["Variable Scope"]:
+            variable_analysis["Variable Scope"][variable_scope] += 1
+        else:
+            variable_analysis["Variable Scope"][variable_scope] = 1
+        
+        if variable_initialized in variable_analysis["Variable Initialization"]:
+            variable_analysis["Variable Initialization"][variable_initialized] += 1
+        else:
+            variable_analysis["Variable Initialization"][variable_initialized] = 1
+    
+    return variable_analysis
+
+def analyze_modifiers(modifiers):
+    modifier_analysis = {
+        "Total Modifiers": len(modifiers),
+        "Modifier Usage": {},
+    }
+    
+    # Analyze each modifier
+    for modifier in modifiers:
+        modifier_name = modifier.get("name")
+        if modifier_name in modifier_analysis["Modifier Usage"]:
+            modifier_analysis["Modifier Usage"][modifier_name] += 1
+        else:
+            modifier_analysis["Modifier Usage"][modifier_name] = 1
+    
+    return modifier_analysis
+
+# Function to analyze functions
+def analyze_functions(functions):
+    function_analysis = {
+        "Total Functions": len(functions),
+        "External Functions": 0,
+        "Internal Functions": 0,
+        "Fallback Function": False,
+        "Payable Functions": 0,
+        "View/Pure Functions": 0,
+        "Function Visibility": {
+            "external": 0,
+            "internal": 0,
+            "public": 0,
+            "private": 0,
+        },
+        "Function Modifiers": {},
+    }
+    
+    # Iterate through each function
+    for function in functions:
+        # Count function visibility
+        visibility = function.get("visibility", "public")
+        function_analysis["Function Visibility"][visibility] += 1
+        
+        # Check if function is external or internal
+        if visibility == "external":
+            function_analysis["External Functions"] += 1
+        elif visibility == "internal":
+            function_analysis["Internal Functions"] += 1
+        
+        # Check if function is payable
+        if function.get("payable", False):
+            function_analysis["Payable Functions"] += 1
+        
+        # Check if function is view or pure
+        if function.get("stateMutability", "") in ["view", "pure"]:
+            function_analysis["View/Pure Functions"] += 1
+        
+        # Check if function is fallback function
+        if function.get("isFallback", False):
+            function_analysis["Fallback Function"] = True
+        
+        # Count function modifiers
+        modifiers = function.get("modifiers", [])
+        for modifier in modifiers:
+            modifier_name = modifier.get("name")
+            if modifier_name in function_analysis["Function Modifiers"]:
+                function_analysis["Function Modifiers"][modifier_name] += 1
+            else:
+                function_analysis["Function Modifiers"][modifier_name] = 1
+    
+    return function_analysis
+
+
+# Function to analyze events
+def analyze_events(events):
+    event_analysis = {
+        "Total Events": len(events),
+        "Event Types": {},
+        "Parameter Analysis": {
+            "Average Parameters per Event": 0,
+            "Parameter Types": {},
+            "Indexed vs. Non-Indexed Parameters": {},
+            "Average Parameter Name Length": 0,
+        },
+        "Usage Patterns": {
+            "Event Occurrence Frequency": {},
+            "Most Common Events": [],
+            "Least Common Events": [],
+            "Events with Most Parameters": [],
+        },
+        "Payload Size": {
+            "Average Payload Size": 0,
+            "Maximum Payload Size": 0,
+            "Minimum Payload Size": float('inf'),
+        },
+        "Dependencies and Interactions": {
+            "Events Triggered by Functions": {},
+            "Events Triggered by State/Conditions": {},
+            "Events Triggering Subsequent Actions": {},
+        },
+        "Event Log Gas Costs": {},
+        "Event Signature Analysis": {
+            "Event Signature Distribution": {},
+            "Similar/Identical Event Signatures": [],
+        },
+        "Event Data Encoding": {
+            "Data Encoding Schemes": {},
+            "Non-Standard Encoding Practices": [],
+        },
+        "Event-driven Contract Behavior": {
+            "Contracts Reliant on Event-driven Architecture": False,
+            "Event-driven Interaction Patterns": {},
+        },
+    }
+
+def analyze_inheritance(inheritance):
+    inheritance_analysis = {
+        "Total Contracts": len(inheritance),
+        "Inheritance Relationships": {},
+        "Contracts with Multiple Parents": [],
+        "Most Inherited Contract": None,
+    }
+    
+    # Count inheritance relationships and identify parent-child pairs
+    for contract in inheritance:
+        parent = contract.get("parent")
+        child = contract.get("child")
+        
+        # Update inheritance relationships
+        if parent in inheritance_analysis["Inheritance Relationships"]:
+            inheritance_analysis["Inheritance Relationships"][parent].append(child)
+        else:
+            inheritance_analysis["Inheritance Relationships"][parent] = [child]
+        
+        # Check for contracts with multiple parents
+        if len(inheritance_analysis["Inheritance Relationships"].get(child, [])) > 1:
+            inheritance_analysis["Contracts with Multiple Parents"].append(child)
+        
+    # Find the most inherited contract
+    max_inheritance_count = 0
+    most_inherited_contract = None
+    for contract, children in inheritance_analysis["Inheritance Relationships"].items():
+        if len(children) > max_inheritance_count:
+            max_inheritance_count = len(children)
+            most_inherited_contract = contract
+    
+    inheritance_analysis["Most Inherited Contract"] = most_inherited_contract
+    
+    return inheritance_analysis
+
+
+    # Check if there are events to analyze
+    if not events:
+        return event_analysis
+
+    # Analysis for each event
+    for event in events:
+        event_name = event.get("name")
+        parameters = event.get("parameters", [])
+        indexed_parameters = sum(1 for param in parameters if param.get("indexed"))
+
+        # Event type breakdown
+        event_type = event.get("type")
+        event_analysis["Event Types"][event_type] = event_analysis["Event Types"].get(event_type, 0) + 1
+
+        # Parameter analysis
+        num_parameters = len(parameters)
+        event_analysis["Parameter Analysis"]["Average Parameters per Event"] += num_parameters
+        for param in parameters:
+            param_type = param.get("type")
+            event_analysis["Parameter Analysis"]["Parameter Types"][param_type] = event_analysis["Parameter Analysis"]["Parameter Types"].get(param_type, 0) + 1
+        event_analysis["Parameter Analysis"]["Indexed vs. Non-Indexed Parameters"][event_name] = {
+            "Indexed Parameters": indexed_parameters,
+            "Non-Indexed Parameters": num_parameters - indexed_parameters,
+        }
+        event_analysis["Parameter Analysis"]["Average Parameter Name Length"] += sum(len(param.get("name", "")) for param in parameters)
+
+        # Usage patterns
+        event_analysis["Usage Patterns"]["Event Occurrence Frequency"][event_name] = event_analysis["Usage Patterns"]["Event Occurrence Frequency"].get(event_name, 0) + 1
+
+        # Payload size
+        payload_size = len(event.get("signature", ""))
+        event_analysis["Payload Size"]["Average Payload Size"] += payload_size
+        event_analysis["Payload Size"]["Maximum Payload Size"] = max(event_analysis["Payload Size"]["Maximum Payload Size"], payload_size)
+        event_analysis["Payload Size"]["Minimum Payload Size"] = min(event_analysis["Payload Size"]["Minimum Payload Size"], payload_size)
+
+        # Event Signature Analysis
+        event_signature = event.get("signature", "")
+        event_analysis["Event Signature Analysis"]["Event Signature Distribution"][event_signature] = event_analysis["Event Signature Analysis"]["Event Signature Distribution"].get(event_signature, 0) + 1
+
+    # Calculate averages and finalize analysis
+    total_events = len(events)
+    if total_events != 0:
+        event_analysis["Parameter Analysis"]["Average Parameters per Event"] /= total_events
+        event_analysis["Parameter Analysis"]["Average Parameter Name Length"] /= total_events
+        event_analysis["Payload Size"]["Average Payload Size"] /= total_events
+
+    # Identify events with the most parameters
+    event_analysis["Usage Patterns"]["Events with Most Parameters"] = sorted(events, key=lambda x: len(x.get("parameters", [])), reverse=True)[:5]
+
+    return event_analysis
+
+
+# Function to analyze contract from compiled JSON data
+def analyze_contract_from_json(json_data):
+    # Extract relevant information from the JSON data
+    contract_id = json_data.get("contract_id")
+    functions = json_data.get("functions", [])
+    variables = json_data.get("variables", [])
+    events = json_data.get("events", [])
+    inheritance = json_data.get("inheritance", [])
+    modifiers = json_data.get("modifiers", [])
+    opcodes = json_data.get("opcodes", [])
+    
+    # Placeholder for analysis logic
+    # You can implement specific analysis based on the extracted data
+    
+    # Example: Analyze functions
+    function_analysis = analyze_functions(functions)
+    
+    # Example: Analyze global variables
+    variable_analysis = analyze_variables(variables)
+    
+    # Example: Analyze events
+    event_analysis = analyze_events(events)
+    
+    # Example: Analyze inheritance relationships
+    inheritance_analysis = analyze_inheritance(inheritance)
+    
+    # Example: Analyze modifiers
+    modifier_analysis = analyze_modifiers(modifiers)
+    
+    # Example: Analyze opcodes
+    opcode_analysis = analyze_opcodes(opcodes)
+    
+    # Combine analysis results
+    analysis_results = {
+        "Contract ID": contract_id,
+        "Function Analysis": function_analysis,
+        "Variable Analysis": variable_analysis,
+        "Event Analysis": event_analysis,
+        "Inheritance Analysis": inheritance_analysis,
+        "Modifier Analysis": modifier_analysis,
+        "Opcode Analysis": opcode_analysis,
+        # Add more analysis results as needed
+    }
+    
+    return analysis_results
+
+
+
+# Function to analyze opcodes
+def analyze_opcodes(opcodes):
+    opcode_counts = {}
+    for opcode in opcodes:
+        opcode_name = opcode.get("name")
+        if opcode_name in opcode_counts:
+            opcode_counts[opcode_name] += 1
+        else:
+            opcode_counts[opcode_name] = 1
+    return opcode_counts
+
+
+# Main loop for processing compiled JSON files
+for filename in os.listdir(compiled_json_folder):
+    file_path = os.path.join(compiled_json_folder, filename)
+
+    # Check if the path is a file and ends with ".json"
+    if os.path.isfile(file_path) and filename.endswith(".json"):
+        # Load compiled JSON data
+        compiled_json_data = load_compiled_json(file_path)
+
+        # Analyze the contract from the loaded JSON data
+        analysis_results = analyze_contract_from_json(compiled_json_data)
+
+        # Save the analysis results to a JSON file
+        analysis_file_path = os.path.join(analysis_report_folder, f"{analysis_results['Contract ID']}_analysis.json")
+        with open(analysis_file_path, "w") as analysis_file:
+            json.dump(analysis_results, analysis_file, indent=4)
+
+        print(f"Analysis results for ID {analysis_results['Contract ID']} saved to {analysis_file_path}")
+
+# Function to analyze unique identifiers
+def analyze_unique_identifiers(opcodes):
+    unique_identifiers = set()
+
+    # Extract contract "id" and contract address from opcodes
+    for opcode in opcodes:
+        contract_ids = re.findall(r'"id":\s*"(\w+)"', opcode)
+        contract_addresses = re.findall(r'"address":\s*"(\w+)"', opcode)
+
+        # Add the unique identifiers to the set
+        unique_identifiers.update(contract_ids)
+        unique_identifiers.update(contract_addresses)
+
+    return list(unique_identifiers)
+
+
+# Function to analyze variable values
+def analyze_variable_values(opcodes):
+    variable_values = []
+    
+    # Placeholder for variable value analysis
+    # You can implement specific logic to track variable changes
+    
+    # Example: Identify push instructions followed by a swap instruction to detect variable assignment
+    for i in range(len(opcodes)):
+        if opcodes[i] == "PUSH1" and opcodes[i+2] == "SWAP1":
+            variable_values.append(opcodes[i+1])
+    
+    return variable_values
+
+# Function to analyze function calls
+def analyze_function_calls(opcodes):
+    function_calls = []
+    
+    # Placeholder for function call analysis
+    # You can implement specific logic to identify function calls and their impact
+    
+    return function_calls
+
+# Function to analyze conditional statements
+def analyze_conditional_statements(opcodes):
+    conditional_statements = []
+    
+    # Placeholder for conditional statement analysis
+    # You can implement specific logic to detect conditional statements and their effects
+    
+    # Example: Identify JUMP or JUMPI instructions to detect conditional statements
+    for opcode in opcodes:
+        if opcode.startswith("JUMP") or opcode.startswith("JUMPI"):
+            conditional_statements.append(opcode)
+    
+    return conditional_statements
+# Function to analyze opcodes
+def analyze_opcodes(opcodes):
+    opcode_analysis = {}
+    
+    # Placeholder for opcode analysis
+    # You can implement specific logic to analyze opcodes and patterns
+    
+    # Example: Count the frequency of each opcode
+    opcode_counts = {}
+    for opcode in opcodes:
+        if opcode in opcode_counts:
+            opcode_counts[opcode] += 1
+        else:
+            opcode_counts[opcode] = 1
+    
+    opcode_analysis["Opcode Frequency"] = opcode_counts
+    
+    return opcode_analysis
+
+# Function to analyze state changes
+def analyze_state_changes(opcodes):
+    state_changes = []
+    
+    # Placeholder for state change analysis
+    # You can implement specific logic to track changes in contract state
+    
+    # Example: Identify SSTORE instructions to detect state changes
+    for opcode in opcodes:
+        if opcode == "SSTORE":
+            state_changes.append(opcode)
+    
+    return state_changes
+
+# Function to analyze event logging
+def analyze_event_logging(opcodes):
+    event_logging = []
+    
+    # Placeholder for event logging analysis
+    # You can implement specific logic to analyze events emitted by the contract
+    
+    # Example: Identify LOG instructions to detect event logging
+    for opcode in opcodes:
+        if opcode.startswith("LOG"):
+            event_logging.append(opcode)
+    
+    return event_logging
+
+# Function to analyze timestamps
+def analyze_timestamps(opcodes):
+    timestamps = []
+    
+    # Placeholder for timestamp analysis
+    # You can implement specific logic to analyze changes in timestamps
+    
+    # Example: Identify block.timestamp manipulation instructions
+    for opcode in opcodes:
+        if opcode == "TIMESTAMP":
+            timestamps.append(opcode)
+    
+    return timestamps
+
+
+# Function to analyze a contract for static and dynamic parts
+def analyze_contract(opcodes):
+    static_parts = {
+        "Keywords and Structural Elements": [],
+        "Structural Elements": [],
+        "Unique Identifiers": analyze_unique_identifiers(opcodes),
+    }
+    
+    dynamic_parts = {
+        "Variable Values": analyze_variable_values(opcodes),
+        "Function Calls": analyze_function_calls(opcodes),
+        "Conditional Statements": analyze_conditional_statements(opcodes),
+        "Opcode Analysis": analyze_opcodes(opcodes),
+        "State Changes": analyze_state_changes(opcodes),
+        "Event Logging": analyze_event_logging(opcodes),
+        "Timestamps": analyze_timestamps(opcodes),
+    }
+    
+    return static_parts, dynamic_parts
+
+# Function to develop a strategy based on the analysis results
+def develop_strategy(static_parts, dynamic_parts):
+    # Placeholder for strategy development
+    # You can implement specific logic to create a strategy based on the analysis
+    
+    strategy = {
+        "Static Parts": static_parts,
+        "Dynamic Parts": dynamic_parts,
+    }
+    
+    return strategy
+
+# Function to validate and test the strategy
+def validate_and_test(strategy):
+    # Placeholder for validation and testing
+    # You can implement specific logic to validate and test the strategy
+    
+    validation_result = {
+        "Validation": "Not implemented",
+        "Testing": "Not implemented",
+    }
+    
+    return validation_result
+
+# Function to monitor and update the strategy
+def monitor_and_update(strategy):
+    # Placeholder for monitoring and updating
+    # You can implement specific logic to monitor and update the strategy
+    
+    monitoring_result = {
+        "Monitoring": "Not implemented",
+        "Updates": "Not implemented",
+    }
+    
+    return monitoring_result
+
+# Main loop for processing contracts
+for filename in os.listdir(data_folder_path):
+    file_path = os.path.join(data_folder_path, filename)
+
+    # Check if the path is a file
+    if os.path.isfile(file_path) and filename.endswith(".txt"):
+        with open(file_path, "r") as txt_file:
+            lines = txt_file.readlines()
+
+        # Check if the file has an "id"
+        has_id = any(line.startswith('"id"') for line in lines)
+
+        # Initialize a dictionary to store contract analysis results
+        analysis_results = {
+            "Contract ID": None,
+            "Static Parts": {},
+            "Dynamic Parts": {},
+        }
+
+        # Iterate through the lines
+        for line in lines:
+            # Remove leading and trailing whitespace
+            line = line.strip()
+
+            # Check if the line starts with '"id"'
+            if line.startswith('"id"'):
+                # If we have encountered a new "id", process the previous data (if any)
+                if analysis_results["Contract ID"] is not None:
+                    # Retrieve the embedded opcodes file path based on the presence of "id"
+                    current_folder = embedded_data_folder_with_id if has_id else embedded_data_folder_without_id
+                    embedded_file_path = os.path.join(current_folder, f"{analysis_results['Contract ID']}_embedded.npy")
+
+                    # Load the embedded opcodes
+                    opcodes_embedded = load_embedded_opcodes(embedded_file_path)
+
+                    # Analyze the embedded opcodes to identify static and dynamic parts
+                    static_parts, dynamic_parts = analyze_contract(opcodes_embedded)
+
+                    # Update the analysis results
+                    analysis_results["Static Parts"] = static_parts
+                    analysis_results["Dynamic Parts"] = dynamic_parts
+
+                    # Develop a strategy based on the analysis results
+                    strategy = develop_strategy(static_parts, dynamic_parts)
+                    analysis_results["Strategy"] = strategy
+
+                    # Validate and test the strategy
+                    validation_result = validate_and_test(strategy)
+                    analysis_results["Validation and Testing"] = validation_result
+
+                    # Monitor and update the strategy
+                    monitoring_result = monitor_and_update(strategy)
+                    analysis_results["Monitoring and Updates"] = monitoring_result
+
+                    # Save the analysis results to a JSON file
+                    analysis_file_path = os.path.join(analysis_report_folder, f"{analysis_results['Contract ID']}_analysis.json")
+                    with open(analysis_file_path, "w") as analysis_file:
+                        json.dump(analysis_results, analysis_file, indent=4)
+
+                    print(f"Analysis results for ID {analysis_results['Contract ID']} saved to {analysis_file_path}")
+
+                # Reset contract ID
+                analysis_results["Contract ID"] = line.split(": ")[1].strip('"')
+
+            elif line.startswith('"opcodes"'):
+                # If the line starts with '"opcodes"', it's part of the opcodes
+                current_opcodes = line[len('"opcodes"')+2:]  # +2 to skip ": "
+
+        # Process the last contract (if any)
+        if analysis_results["Contract ID"] is not None:
+            # Retrieve the embedded opcodes file path based on the presence of "id"
+            current_folder = embedded_data_folder_with_id if has_id else embedded_data_folder_without_id
+            embedded_file_path = os.path.join(current_folder, f"{analysis_results['Contract ID']}_embedded.npy")
+
+            # Load the embedded opcodes
+            opcodes_embedded = load_embedded_opcodes(embedded_file_path)
+
+            # Analyze the embedded opcodes to identify static and dynamic parts
+            static_parts, dynamic_parts = analyze_contract(opcodes_embedded)
+
+            # Update the analysis results
+            analysis_results["Static Parts"] = static_parts
+            analysis_results["Dynamic Parts"] = dynamic_parts
+
+            # Develop a strategy based on the analysis results
+            strategy = develop_strategy(static_parts, dynamic_parts)
+            analysis_results["Strategy"] = strategy
+
+            # Validate and test the strategy
+            validation_result = validate_and_test(strategy)
+            analysis_results["Validation and Testing"] = validation_result
+
+            # Monitor and update the strategy
+            monitoring_result = monitor_and_update(strategy)
+            analysis_results["Monitoring and Updates"] = monitoring_result
+
+            # Save the analysis results to a JSON file
+            analysis_file_path = os.path.join(analysis_report_folder, f"{analysis_results['Contract ID']}_analysis.json")
+            with open(analysis_file_path, "w") as analysis_file:
+                json.dump(analysis_results, analysis_file, indent=4)
+
+            print(f"Analysis results for ID {analysis_results['Contract ID']} saved to {analysis_file_path}")

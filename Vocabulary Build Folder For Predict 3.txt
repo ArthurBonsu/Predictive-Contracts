@@ -1,0 +1,26 @@
+from gensim.models import Word2Vec
+from gensim.models.word2vec import LineSentence
+import os
+
+# Specify the path to the opcode text corpus file
+corpus_file_path = "/content/drive/MyDrive/opcodes_three_corpus.txt"
+
+# Specify the path to the vocabulary build folder
+vocabulary_build_folder = "/content/drive/MyDrive/thirdvocabularybuildfolder2"
+os.makedirs(vocabulary_build_folder, exist_ok=True)
+
+# Initialize the Word2Vec model
+model = Word2Vec(vector_size=100, window=5, min_count=1, workers=4)
+
+# Read the opcode text corpus file
+with open(corpus_file_path, "r") as corpus_file:
+    sentences = [line.split() for line in corpus_file.readlines()]
+
+# Build the Word2Vec vocabulary
+model.build_vocab(sentences)
+
+# Save the model to the vocabulary build folder
+vocabulary_file_path = os.path.join(vocabulary_build_folder, "thirdword2vec.model")
+model.save(vocabulary_file_path)
+
+print(f"Vocabulary built and saved to {vocabulary_file_path}")

@@ -1,0 +1,30 @@
+from gensim.models import Word2Vec
+
+# Specify the path to the saved Word2Vec model file
+model_file_path = "/content/drive/MyDrive/firstvocabularybuildfolder2/firstword2vec.model"
+
+# Load the Word2Vec model
+model = Word2Vec.load(model_file_path)
+
+# Specify the paths for the output files
+vocabulary_file_path = "/content/drive/MyDrive/firstmyvocabulary.txt"
+word_vectors_file_path = "/content/drive/MyDrive/firstmyword_vectors.txt"
+
+# Save the vocabulary to a text file
+with open(vocabulary_file_path, "w") as vocab_file:
+    for word in model.wv.index_to_key:
+        vocab_file.write(word + "\n")
+
+# Save word vectors to a text file in batches
+batch_size = 1000  # Adjust the batch size as needed
+word_vectors = list(model.wv.index_to_key)
+with open(word_vectors_file_path, "w") as vectors_file:
+    for i in range(0, len(word_vectors), batch_size):
+        batch = word_vectors[i:i + batch_size]
+        for word in batch:
+            vector = model.wv[word]
+            vector_str = " ".join(map(str, vector))
+            vectors_file.write(f"{word} {vector_str}\n")
+
+print(f"Vocabulary saved to {vocabulary_file_path}")
+print(f"Word vectors saved to {word_vectors_file_path}")

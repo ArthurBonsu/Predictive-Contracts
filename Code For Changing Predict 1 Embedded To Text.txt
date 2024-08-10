@@ -1,0 +1,113 @@
+import os
+import numpy as np
+from gensim.models import Word2Vec
+
+# Load the pre-trained Word2Vec model
+vocabulary_build_folder = "/content/drive/MyDrive/PREDICTIVE WORK TRY/firstvocabularybuildfolder2"
+model = Word2Vec.load(os.path.join(vocabulary_build_folder, "firstword2vec.model"))
+
+# Specify the folder path where your data files are located
+data_folder_path = "/content/drive/MyDrive/PREDICTIVE WORK TRY/predictoneopecodes"
+
+# Create folders to store the embedded data
+embedded_data_folder_with_id = "/content/drive/MyDrive/PREDICTIVE WORK TRY/firstmynewembeds"
+embedded_data_folder_without_id = "/content/drive/MyDrive/PREDICTIVE WORK TRY/fullembeds"
+os.makedirs(embedded_data_folder_with_id, exist_ok=True)
+os.makedirs(embedded_data_folder_without_id, exist_ok=True)
+
+# Specify new output folders for textual data
+textual_embedded_data_folder_with_id = "/content/drive/MyDrive/PREDICTIVE WORK TRY/textualnewembeds"
+textual_embedded_data_folder_without_id = "/content/drive/MyDrive/PREDICTIVE WORK TRY/textualfullembeds"
+os.makedirs(textual_embedded_data_folder_with_id, exist_ok=True)
+os.makedirs(textual_embedded_data_folder_without_id, exist_ok=True)
+
+# Function to embed opcodes
+def embed_opcodes(opcodes, model):
+    words = opcodes.split()
+    embedded_opcodes = []
+    for word in words:
+        if word in model.wv:
+            embedded_opcodes.append(model.wv[word])
+    return embedded_opcodes
+
+# Initialize variables to store the current ID and opcodes
+current_id = None
+current_opcodes = ""
+has_id = False  # Initialize has_id to False
+
+# Iterate through all files in the data folder
+for filename in os.listdir(data_folder_path):
+    file_path = os.path.join(data_folder_path, filename)
+
+    # Check if the path is a file
+    if os.path.isfile(file_path) and filename.endswith(".txt"):
+        with open(file_path, "r") as txt_file:
+            lines = txt_file.readlines()
+
+        # Check if the file has an "id"
+        has_id = any(line.startswith('"id"') for line in lines)
+
+        # Iterate through the lines
+        for line in lines:
+            # Remove leading and trailing whitespace
+            line = line.strip()
+
+            # Check if the line starts with '"id"'
+            if line.startswith('"id"'):
+                # If we have encountered a new "id", process the previous data (if any)
+                if current_id is not None:
+                    # Embed opcodes
+                    opcodes_embedded = embed_opcodes(current_opcodes, model)
+
+                    # Convert to a numpy array
+                    opcodes_embedded = np.array(opcodes_embedded)
+
+                    # Determine the appropriate folder based on the presence of "id"
+                    current_folder = embedded_data_folder_with_id if has_id else embedded_data_folder_without_id
+
+                    # Save the embedded opcodes in a single file
+                    embedded_file_path = os.path.join(current_folder, f"{current_id}_embedded.npy")
+                    np.save(embedded_file_path, opcodes_embedded)
+
+                    print(f"Embedded opcodes for ID {current_id} and saved to {embedded_file_path}")
+
+                    # Convert and save as a .txt file in the textual folder
+                    textual_folder = textual_embedded_data_folder_with_id if has_id else textual_embedded_data_folder_without_id
+                    textual_file_path = os.path.join(textual_folder, f"{current_id}_embedded.txt")
+                    np.savetxt(textual_file_path, opcodes_embedded)
+
+                    print(f"Textual embedded opcodes for ID {current_id} and saved to {textual_file_path}")
+
+                # Reset current ID and opcodes
+                current_id = line.split(": ")[1].strip('"')
+                current_opcodes = ""
+
+            elif line.startswith('"opcodes"'):
+                # If the line starts with '"opcodes"', it's part of the opcodes
+                current_opcodes += line[len('"opcodes"')+2:]  # +2 to skip ": "
+
+# Process the last data block (if any)
+if current_id is not None:
+    # Embed opcodes
+    opcodes_embedded = embed_opcodes(current_opcodes, model)
+
+    # Convert to a numpy array
+    opcodes_embedded = np.array(opcodes_embedded)
+
+    # Determine the appropriate folder based on the presence of "id"
+    current_folder = embedded_data_folder_with_id if has_id else embedded_data_folder_without_id
+
+    # Save the embedded opcodes in a single file
+    embedded_file_path = os.path.join(current_folder, f"{current_id}_embedded.npy")
+    np.save(embedded_file_path, opcodes_embedded)
+
+    print(f"Embedded opcodes for ID {current_id} and saved to {embedded_file_path}")
+
+    # Convert and save as a .txt file in the textual folder
+    textual_folder = textual_embedded_data_folder_with_id if has_id else textual_embedded_data_folder_without_id
+    textual_file_path = os.path.join(textual_folder, f"{current_id}_embedded.txt")
+    np.savetxt(textual_file_path, opcodes_embedded)
+
+    print(f"Textual embedded opcodes for ID {current_id} and saved to {textual_file_path}")
+
+print("Embedding completed.")

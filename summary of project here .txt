@@ -1,0 +1,119 @@
+Steps Summary 
+1. Extract Opecode from Original File  Folder[optional]
+2. Extract Multiple Opecode and Id[Compulsory] 
+3. Develop the Text Opecode for the Multiple Opecode and Text ID  generated 
+4. Develop the Vocabulary for the Opecode and Ids generated as 
+5. Provide a means for reading the word2vec generated from the vocabulary either by converting it as a text file as
+6. Try to embedd the previous opecode using the word2vec generated 
+7. Embedding Done
+8. Now with Embedded Opecodes, we have two folders,they are: 
+a) Has ID  
+b) No ID   
+9. We convert them to text files 
+10. We try to build a relationship between opecodes and embeds using paths 
+11. We design a checker -First code, and two implementations 
+
+
+FILE PATH = ORIGINAL FILE :
+1. Original Compiled Contract
+ORIGINALFLOOR = https://drive.google.com/drive/folders/1H7J_6TlkLg5-SjRfUgYX6xN1JQHMDsKS?usp=sharing
+
+
+a). First Original Compiled Contract -F1(A)
+PREDICT1 = https://drive.google.com/drive/folders/1TbO6kjLQUI24W5abRyS7XZ01ogCUFt90?usp=sharing
+
+b). Second Original Compiled Contract -F1(B)
+PREDICT2 = https://drive.google.com/drive/folders/1DUaTKtJhVJ0hDIuj2AW8ESCQvJFx1bY-?usp=sharing
+
+c). Third Original Compiled Contract -F1(C)
+PREDICT3 = https://drive.google.com/drive/folders/1pR2iuXn2UZ8yq851Hwr7oxLmL_yzW8TN?usp=sharing
+
+
+ Extracted Opcodes For Predict 1
+ predictoneopecodes = https://drive.google.com/drive/folders/1UGC6yDOLqjYxWyY8gdZzUV4M7R5zCpOW?usp=sharing
+
+ Opcode Text Corpus Into Text For Predict 1
+ opcodes_one_corpus.txt =https://drive.google.com/file/d/1j7tl_kxiaKwVL6QmJnRJZiDrUQrg5Vb-/view?usp=sharing
+
+ Vocabulary Build Folder For Predict 1
+ firstvocabularybuildfolder2 =https://drive.google.com/drive/folders/1jKpnZz1J6tZpvJtmg2hEONtVSJxrt4_T?usp=sharing
+
+ Word Vectors For Predict 1
+ firstmyword_vectors.txt = https://drive.google.com/file/d/1jp3poWY5XuEpEYDT_s-g71fLTnSGMfx8/view?usp=sharing
+
+ Vocabulary Into Text For Predict 1
+ firstmyvocabulary.txt = https://drive.google.com/file/d/1jq9dMv6w0xQMQl-5n_9KIu7PUSH3RIXL/view?usp=sharing
+ 
+ Embedded File For Predict 1
+ firstmynewembeds= https://drive.google.com/drive/folders/1Ij3CxdE0vOMTnbSQbKOOVXjPEvPzhhG-?usp=sharing
+
+
+
+ Extracted Opcodes For Predict 2
+ predicttwoopcodes= "https://drive.google.com/drive/folders/1EqSuKZFTBQ_9wyG1Mf0lu6gfB9AstEfH?usp=sharing
+
+ Opcode Text Corpus Into Text For Predict 2 
+ opcodes_two_corpus.txt = https://drive.google.com/file/d/1j7vJfnQ4LdRWzMdfn__kpJqkycxYIzgH/view?usp=sharing
+
+Second Vocabulary Build Folder For Predict 2 
+ secondvocabularybuildfolder2 = https://drive.google.com/drive/folders/1jVApMoFeRKtwD-XxrMVIh-FJZbKzjkhu?usp=sharing
+
+ Word Vectors For Predict 2
+ secondmyword_vectors.txt = https://drive.google.com/file/d/1jup2-gD4yklLmCcdPE5IuSc7f-Pm8j8y/view?usp=sharing
+
+ Vocabulary Into Text For Predict 2
+ secondmyvocabulary.txt = https://drive.google.com/file/d/1k35ZPBXNgt1Mi6RWfFOPTVuy7fp5oRUy/view?usp=sharing
+
+ 
+ Embedded File For Predict 2
+ secondmynewembeds=https://drive.google.com/drive/folders/177s6e_-Q7Xu6nY3zXJCWXfHt8KnGbd2h?usp=sharing
+
+
+
+
+Extracted  Opcodes For Predict 3
+predictthreeopcodes = https://drive.google.com/drive/folders/1YsuCgYeXNty3_ryxgMHeyIoDYW7sfKok?usp=sharing
+
+Opcode Text Corpus Into Text For Predict 3 
+opcodes_three_corpus.txt =https://drive.google.com/file/d/1j9HbhAc_e_D82uzirMccftegULBw24Q7/view?usp=sharing
+
+
+Word Vectors For Predict 3
+thirdmyword_vectors.txt= https://drive.google.com/file/d/1k78oieMCPOwZ_NtJ6Ay3BScgZJixxmgG/view?usp=sharing
+ 
+Vocabulary Build Folder For Predict 3
+thirdvocabularybuildfolder2 = https://drive.google.com/drive/folders/1jmCIRhZoeJRwmfTgilaPZz-pg9eSz08C?usp=sharing
+        
+Vocabulary Into Text For Predict 3
+thirdmyvocabulary.txt = https://drive.google.com/file/d/1k7Ta2cHfwi9ql1A4ZDIoUx681M0CwHI-/view?usp=sharing
+
+
+Embedded File For Predict 3 
+thirdmynewembeds = https://drive.google.com/drive/folders/1FMQsl3bOFyxR8qsv6xnJ4LKLcwo9rRie?usp=sharing
+
+
+Continued Process
+
+1. We have the code for continued scenarios
+Assuming we have two folders that have 
+a) Opcode with ID 
+b) Opcodes with no ID
+
+2. We will then embedd them, creating two folders with 
+a) Embedded code with ID
+b) Embedded code with no ID
+.This creates several embedded files known as npy in two folders
+We will try to change Embedded Files to text 
+
+<This was done in Code Second>
+3. Since each file within the Opcode Folder and the Embedd Folder has a path name, we will try to map them together by path 
+a) Code FOr Mapping Path to Opecode (For ones with no ID)
+b) Code For Mapping Path to Opcode (For ones with ID)
+
+4. We connect the Mapped Opcodes to their corresponding embedded Files
+
+5. We try to identify the dynamic parts and static parts
+Thus Implementation 1 and Implementation 2 
+
+Assuming the Original Files  change, we want to be able to detecht changes 
+

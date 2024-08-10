@@ -1,0 +1,28 @@
+import os
+
+# Specify the folder path where the .txt files are located
+txt_folder_path = "/content/drive/MyDrive/PREDICTIVE WORK TRY/predicttwoopcodes"
+
+# Specify the output file path for the text corpus
+corpus_file_path = "/content/drive/MyDrive/PREDICTIVE WORK TRY/opcodes_two_corpus.txt"
+
+# Initialize an empty list to store opcodes
+opcodes_list = []
+
+# Iterate through all .txt files in the folder
+for filename in os.listdir(txt_folder_path):
+    if filename.endswith(".txt"):
+        file_path = os.path.join(txt_folder_path, filename)
+
+        # Read the contents of the .txt file
+        with open(file_path, "r") as txt_file:
+            # Extract opcodes and append them to the list
+            opcodes = txt_file.read().strip()
+            opcodes_list.append(opcodes)
+
+# Join opcodes with a space separator and write to the corpus file
+with open(corpus_file_path, "w") as corpus_file:
+    corpus_text = "\n".join(opcodes_list)
+    corpus_file.write(corpus_text)
+
+print(f"Text corpus saved to {corpus_file_path}")

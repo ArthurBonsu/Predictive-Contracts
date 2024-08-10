@@ -1,0 +1,79 @@
+import os
+import numpy as np
+from gensim.models import Word2Vec
+
+# Load the pre-trained Word2Vec model
+vocabulary_build_folder = "/content/drive/MyDrive/thirdvocabularybuildfolder2"
+model = Word2Vec.load(os.path.join(vocabulary_build_folder, "thirdword2vec.model"))
+
+# Specify the folder path where your data files are located
+data_folder_path = "/content/drive/MyDrive/predictthreeopcodes"
+
+# Create a folder to store the embedded data
+embedded_data_folder = "/content/drive/MyDrive/thirdmynewembeds"
+os.makedirs(embedded_data_folder, exist_ok=True)
+
+# Function to embed opcodes
+def embed_opcodes(opcodes, model):
+    words = opcodes.split()
+    embedded_opcodes = []
+    for word in words:
+        if word in model.wv:
+            embedded_opcodes.append(model.wv[word])
+    return embedded_opcodes
+
+# Initialize variables to store the current ID and opcodes
+current_id = None
+current_opcodes = ""
+
+# Iterate through all files in the data folder
+for filename in os.listdir(data_folder_path):
+    file_path = os.path.join(data_folder_path, filename)
+
+    # Check if the path is a file
+    if os.path.isfile(file_path) and filename.endswith(".txt"):
+        with open(file_path, "r") as txt_file:
+            lines = txt_file.readlines()
+
+        # Iterate through the lines
+        for line in lines:
+            # Remove leading and trailing whitespace
+            line = line.strip()
+
+            # Check if the line starts with '"id"'
+            if line.startswith('"id"'):
+                # If we have encountered a new "id", process the previous data (if any)
+                if current_id is not None:
+                    # Embed opcodes
+                    opcodes_embedded = embed_opcodes(current_opcodes, model)
+
+                    # Convert to a numpy array
+                    opcodes_embedded = np.array(opcodes_embedded)
+
+                    # Save the embedded opcodes in a single file
+                    embedded_file_path = os.path.join(embedded_data_folder, f"{current_id}_embedded.npy")
+                    np.save(embedded_file_path, opcodes_embedded)
+
+                    print(f"Embedded opcodes for ID {current_id} and saved to {embedded_file_path}")
+
+                # Reset current ID and opcodes
+                current_id = line.split(": ")[1].strip('"')
+                current_opcodes = ""
+
+            elif line.startswith('"opcodes"'):
+                # If the line starts with '"opcodes"', it's part of the opcodes
+                current_opcodes += line[len('"opcodes"')+2:]  # +2 to skip ": "
+
+# Process the last data block (if any)
+if current_id is not None:
+    # Embed opcodes
+    opcodes_embedded = embed_opcodes(current_opcodes, model)
+
+    # Convert to a numpy array
+    opcodes_embedded = np.array(opcodes_embedded)
+
+    # Save the embedded opcodes in a single file
+    embedded_file_path = os.path.join(embedded_data_folder, f"{current_id}_embedded.npy")
+    np.save(embedded_file_path, opcodes_embedded)
+
+    print(f"Embedded opcodes for ID {current_id} and saved to {embedded_file_path}")

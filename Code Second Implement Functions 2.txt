@@ -1,0 +1,151 @@
+import os
+import re
+
+# Function to analyze variable values and response actions
+def analyze_contract_opcodes(opcodes):
+    variable_changes = []
+    response_actions = []
+
+    # Initialize a dictionary to store variable values
+    variables = {}
+
+    lines = opcodes.split('\n')
+
+    for line in lines:
+        # Check if the line contains an assignment to a variable
+        assignment_match = re.match(r'\s*(\w+)\s*=\s*(.*?);', line)
+        if assignment_match:
+            variable_name, new_value = assignment_match.groups()
+
+            # Check if the variable already exists in our state
+            if variable_name in variables:
+                old_value = variables[variable_name]
+
+                # Check if the variable's value has changed
+                if old_value != new_value:
+                    variable_changes.append({
+                        "Variable Name": variable_name,
+                        "Old Value": old_value,
+                        "New Value": new_value,
+                        "Change Context": line  # The line where the change occurred
+                    })
+
+            # Update the variable's value in our state
+            variables[variable_name] = new_value
+
+        # Detect response actions based on patterns (e.g., fund transfers)
+        if "transfer(" in line:
+            response_actions.append({
+                "Action": "Transfer Funds",
+                "Context": line
+            })
+
+        # You can add more patterns to detect other response actions here
+
+    return variable_changes, response_actions
+
+# Function to embed opcodes
+def embed_opcodes(opcodes, model):
+    words = opcodes.split()
+    embedded_opcodes = []
+    for word in words:
+        if word in model.wv:
+            embedded_opcodes.append(model.wv[word])
+    return embedded_opcodes
+
+# Function to analyze unique identifiers
+def analyze_unique_identifiers(opcodes):
+    unique_identifiers = set()
+    
+    # Extract contract "id" and contract address from opcodes
+    contract_ids = re.findall(r'"id":\s*"(\w+)"', opcodes)
+    contract_addresses = re.findall(r'"address":\s*"(\w+)"', opcodes)
+    
+    # Add the unique identifiers to the set
+    unique_identifiers.update(contract_ids)
+    unique_identifiers.update(contract_addresses)
+    
+    return list(unique_identifiers)
+
+# Function to analyze variable values and response actions
+def analyze_variable_values_and_response_actions(opcodes):
+    # Analyze variable changes and response actions
+    variable_changes, response_actions = analyze_contract_opcodes(opcodes)
+    
+    # You can add more analysis here
+    
+    return variable_changes, response_actions
+
+# Function to analyze function calls
+def analyze_function_calls(opcodes):
+    function_calls = []
+    
+    # Placeholder for function call analysis
+    # You can implement specific logic to identify function calls and their impact
+    
+    return function_calls
+
+# Function to analyze conditional statements
+def analyze_conditional_statements(opcodes):
+    conditional_statements = []
+    
+    # Placeholder for conditional statement analysis
+    # You can implement specific logic to detect conditional statements and their effects
+    
+    return conditional_statements
+
+# Function to analyze opcodes
+def analyze_opcodes(opcodes):
+    opcode_analysis = {}
+    
+    # Placeholder for opcode analysis
+    # You can implement specific logic to analyze opcodes and patterns
+    
+    return opcode_analysis
+
+# Function to analyze state changes
+def analyze_state_changes(opcodes):
+    state_changes = []
+    
+    # Placeholder for state change analysis
+    # You can implement specific logic to track changes in contract state
+    
+    return state_changes
+
+# Function to analyze event logging
+def analyze_event_logging(opcodes):
+    event_logging = []
+    
+    # Placeholder for event logging analysis
+    # You can implement specific logic to analyze events emitted by the contract
+    
+    return event_logging
+
+# Function to analyze timestamps
+def analyze_timestamps(opcodes):
+    timestamps = []
+    
+    # Placeholder for timestamp analysis
+    # You can implement specific logic to analyze changes in timestamps
+    
+    return timestamps
+
+# Function to analyze a contract for static and dynamic parts
+def analyze_contract(opcodes):
+    static_parts = {
+        "Keywords and Structural Elements": [],
+        "Structural Elements": [],
+        "Unique Identifiers": analyze_unique_identifiers(opcodes),
+    }
+    
+    dynamic_parts = {
+        "Variable Values and Response Actions": analyze_variable_values_and_response_actions(opcodes),
+        "Function Calls": analyze_function_calls(opcodes),
+        "Conditional Statements": analyze_conditional_statements(opcodes),
+        "Opcode Analysis": analyze_opcodes(opcodes),
+        "State Changes": analyze_state_changes(opcodes),
+        "Event Logging": analyze_event_logging(opcodes),
+        "Timestamps": analyze_timestamps(opcodes),
+    }
+    
+    return static_parts, dynamic_parts

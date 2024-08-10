@@ -1,0 +1,317 @@
+import os
+import numpy as np
+from gensim.models import Word2Vec
+import json
+import re
+
+# Load the pre-trained Word2Vec model
+vocabulary_build_folder = "/content/drive/MyDrive/PREDICTIVE WORK TRY/firstvocabularybuildfolder2"
+model = Word2Vec.load(os.path.join(vocabulary_build_folder, "firstword2vec.model"))
+
+
+# Specify the folder path where your data files are located
+data_folder_path = "/content/drive/MyDrive/PREDICTIVE WORK TRY/predictoneopecodes"
+
+# Specify the folder paths to retrieve the already embedded opcodes
+embedded_data_folder_with_id = "/content/drive/MyDrive/PREDICTIVE WORK TRY/firstmynewembeds"
+
+
+# Create a folder to store analysis reports
+analysis_report_folder = "/content/drive/MyDrive/contract_analysis_reports"
+os.makedirs(analysis_report_folder, exist_ok=True)
+
+# Function to load embedded opcodes from the specified folder
+def load_embedded_opcodes(file_path):
+    return np.load(file_path, allow_pickle=True).astype(str)
+
+
+# Function to analyze unique identifiers
+def analyze_unique_identifiers(opcodes):
+    unique_identifiers = set()
+
+    # Extract contract "id" and contract address from opcodes
+    for opcode in opcodes:
+        opcode_str = str(opcode)  # Convert numpy array element to string
+        contract_ids = re.findall(r'"id":\s*"(\w+)"', opcode_str)
+        contract_addresses = re.findall(r'"address":\s*"(\w+)"', opcode_str)
+
+        # Add the unique identifiers to the set
+        unique_identifiers.update(contract_ids)
+        unique_identifiers.update(contract_addresses)
+
+    return list(unique_identifiers)
+
+
+# Function to analyze variable values
+def analyze_variable_values(opcodes):
+    variable_values = []
+    
+    # Convert numpy array to list
+    opcodes_list = opcodes.tolist()
+    
+    # Placeholder for variable value analysis
+    # You can implement specific logic to track variable changes
+    
+    # Example: Identify push instructions followed by a swap instruction to detect variable assignment
+    for i in range(len(opcodes_list) - 2): 
+        # Subtract 2 to avoid index out of range error
+        if opcodes_list[i] == "PUSH1" and opcodes_list[i+2] == "SWAP1":
+            variable_values.append(opcodes_list[i+1])
+    
+    return variable_values
+
+# Function to analyze function calls
+def analyze_function_calls(opcodes):
+    function_calls = []
+    
+    # Placeholder for function call analysis
+    # You can implement specific logic to identify function calls and their impact
+    
+    return function_calls
+
+
+# Function to analyze conditional statements
+def analyze_conditional_statements(opcodes):
+    conditional_statements = []
+    
+    # Placeholder for conditional statement analysis
+    # You can implement specific logic to detect conditional statements and their effects
+    
+    # Example: Identify JUMP or JUMPI instructions to detect conditional statements
+    for opcode in opcodes:
+        # Convert the opcode to a string
+        opcode_str = str(opcode)
+        if opcode_str.startswith("JUMP") or opcode_str.startswith("JUMPI"):
+            conditional_statements.append(opcode_str)
+    
+    return conditional_statements
+
+# Function to analyze opcodes
+def analyze_opcodes(opcodes):
+    opcode_analysis = {}
+    
+    # Placeholder for opcode analysis
+    # You can implement specific logic to analyze opcodes and patterns
+    
+    # Example: Count the frequency of each opcode
+    opcode_counts = {}
+    for opcode in opcodes:
+        # Convert the numpy array to a tuple
+        opcode_tuple = tuple(opcode)
+        if opcode_tuple in opcode_counts:
+            opcode_counts[opcode_tuple] += 1
+        else:
+            opcode_counts[opcode_tuple] = 1
+    
+    opcode_analysis["Opcode Frequency"] = opcode_counts
+    
+    return opcode_analysis
+
+# Function to analyze state changes
+def analyze_state_changes(opcodes):
+    state_changes = []
+    
+    # Placeholder for state change analysis
+    # You can implement specific logic to track changes in contract state
+    
+    # Example: Identify SSTORE instructions to detect state changes
+    for opcode in opcodes:
+        # Convert the opcode to a string
+        opcode_str = str(opcode)
+        if opcode_str == "SSTORE":
+            state_changes.append(opcode_str)
+    
+    return state_changes
+    
+# Function to analyze event logging
+def analyze_event_logging(opcodes):
+    event_logging = []
+    
+    # Placeholder for event logging analysis
+    # You can implement specific logic to analyze events emitted by the contract
+    
+    # Example: Identify LOG instructions to detect event logging
+    for opcode in opcodes:
+        opcode_str = str(opcode)
+        if opcode_str.startswith("LOG"):
+            event_logging.append(opcode_str)
+    
+    return event_logging
+
+# Function to analyze timestamps
+def analyze_timestamps(opcodes):
+    timestamps = []
+    
+    # Placeholder for timestamp analysis
+    # You can implement specific logic to analyze changes in timestamps
+    
+    # Example: Identify block.timestamp manipulation instructions
+    for opcode in opcodes:
+        # Convert the opcode to a string
+        opcode_str = str(opcode)
+        if opcode_str == "['TIMESTAMP']":  # Check if the opcode is a timestamp instruction
+            timestamps.append(opcode_str)
+    
+    return timestamps
+
+# Function to analyze a contract for static and dynamic parts
+def analyze_contract(opcodes):
+    static_parts = {
+        "Keywords and Structural Elements": [],
+        "Structural Elements": [],
+        "Unique Identifiers": analyze_unique_identifiers(opcodes),
+    }
+    
+    dynamic_parts = {
+        "Variable Values": analyze_variable_values(opcodes),
+        "Function Calls": analyze_function_calls(opcodes),
+        "Conditional Statements": analyze_conditional_statements(opcodes),
+        "Opcode Analysis": analyze_opcodes(opcodes),
+        "State Changes": analyze_state_changes(opcodes),
+        "Event Logging": analyze_event_logging(opcodes),
+        "Timestamps": analyze_timestamps(opcodes),
+    }
+    
+    return static_parts, dynamic_parts
+
+# Function to develop a strategy based on the analysis results
+def develop_strategy(static_parts, dynamic_parts):
+    # Placeholder for strategy development
+    # You can implement specific logic to create a strategy based on the analysis
+    
+    strategy = {
+        "Static Parts": static_parts,
+        "Dynamic Parts": dynamic_parts,
+    }
+    
+    return strategy
+
+# Function to validate and test the strategy
+def validate_and_test(strategy):
+    # Placeholder for validation and testing
+    # You can implement specific logic to validate and test the strategy
+    
+    validation_result = {
+        "Validation": "Not implemented",
+        "Testing": "Not implemented",
+    }
+    
+    return validation_result
+
+# Function to monitor and update the strategy
+def monitor_and_update(strategy):
+    # Placeholder for monitoring and updating
+    # You can implement specific logic to monitor and update the strategy
+    
+    monitoring_result = {
+        "Monitoring": "Not implemented",
+        "Updates": "Not implemented",
+    }
+    
+    return monitoring_result
+
+# Main loop for processing contracts
+for filename in os.listdir(data_folder_path):
+    file_path = os.path.join(data_folder_path, filename)
+
+    # Check if the path is a file
+    if os.path.isfile(file_path) and filename.endswith(".txt"):
+        with open(file_path, "r") as txt_file:
+            lines = txt_file.readlines()
+
+        # Check if the file has an "id"
+        has_id = any(line.startswith('"id"') for line in lines)
+
+        # Initialize a dictionary to store contract analysis results
+        analysis_results = {
+            "Contract ID": None,
+            "Static Parts": {},
+            "Dynamic Parts": {},
+        }
+
+        # Iterate through the lines
+        for line in lines:
+            # Remove leading and trailing whitespace
+            line = line.strip()
+
+            # Check if the line starts with '"id"'
+            if line.startswith('"id"'):
+                # If we have encountered a new "id", process the previous data (if any)
+                if analysis_results["Contract ID"] is not None:
+                    # Retrieve the embedded opcodes file path based on the presence of "id"
+                    current_folder = embedded_data_folder_with_id if has_id else embedded_data_folder_without_id
+                    embedded_file_path = os.path.join(current_folder, f"{analysis_results['Contract ID']}_embedded.npy")
+
+                    # Load the embedded opcodes
+                    opcodes_embedded = load_embedded_opcodes(embedded_file_path)
+                    print(type(opcodes_embedded))
+
+                    # Analyze the embedded opcodes to identify static and dynamic parts
+                    static_parts, dynamic_parts = analyze_contract(opcodes_embedded)
+
+                    # Update the analysis results
+                    analysis_results["Static Parts"] = static_parts
+                    analysis_results["Dynamic Parts"] = dynamic_parts
+
+                    # Develop a strategy based on the analysis results
+                    strategy = develop_strategy(static_parts, dynamic_parts)
+                    analysis_results["Strategy"] = strategy
+
+                    # Validate and test the strategy
+                    validation_result = validate_and_test(strategy)
+                    analysis_results["Validation and Testing"] = validation_result
+
+                    # Monitor and update the strategy
+                    monitoring_result = monitor_and_update(strategy)
+                    analysis_results["Monitoring and Updates"] = monitoring_result
+
+                    # Save the analysis results to a JSON file
+                    analysis_file_path = os.path.join(analysis_report_folder, f"{analysis_results['Contract ID']}_analysis.json")
+                    with open(analysis_file_path, "w") as analysis_file:
+                        json.dump(analysis_results, analysis_file, indent=4)
+
+                    print(f"Analysis results for ID {analysis_results['Contract ID']} saved to {analysis_file_path}")
+
+                # Reset contract ID
+                analysis_results["Contract ID"] = line.split(": ")[1].strip('"')
+
+            elif line.startswith('"opcodes"'):
+                # If the line starts with '"opcodes"', it's part of the opcodes
+                current_opcodes = line[len('"opcodes"')+2:]  # +2 to skip ": "
+
+        # Process the last contract (if any)
+        if analysis_results["Contract ID"] is not None:
+            # Retrieve the embedded opcodes file path based on the presence of "id"
+            current_folder = embedded_data_folder_with_id if has_id else embedded_data_folder_without_id
+            embedded_file_path = os.path.join(current_folder, f"{analysis_results['Contract ID']}_embedded.npy")
+
+            # Load the embedded opcodes
+            opcodes_embedded = load_embedded_opcodes(embedded_file_path)
+            print(type(opcodes_embedded))
+
+            # Analyze the embedded opcodes to identify static and dynamic parts
+            static_parts, dynamic_parts = analyze_contract(opcodes_embedded)
+
+            # Update the analysis results
+            analysis_results["Static Parts"] = static_parts
+            analysis_results["Dynamic Parts"] = dynamic_parts
+
+            # Develop a strategy based on the analysis results
+            strategy = develop_strategy(static_parts, dynamic_parts)
+            analysis_results["Strategy"] = strategy
+
+            # Validate and test the strategy
+            validation_result = validate_and_test(strategy)
+            analysis_results["Validation and Testing"] = validation_result
+
+            # Monitor and update the strategy
+            monitoring_result = monitor_and_update(strategy)
+            analysis_results["Monitoring and Updates"] = monitoring_result
+
+            # Save the analysis results to a JSON file
+            analysis_file_path = os.path.join(analysis_report_folder, f"{analysis_results['Contract ID']}_analysis.json")
+            with open(analysis_file_path, "w") as analysis_file:
+                json.dump(analysis_results, analysis_file, indent=4)
+
+            print(f"Analysis results for ID {analysis_results['Contract ID']} saved to {analysis_file_path}")
+
