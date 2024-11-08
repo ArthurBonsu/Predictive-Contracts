@@ -1,6 +1,6 @@
 # Predictive Contracts
 
-This project involves steps for working with predictive contracting by extracting, embedding, and mapping opcodes to enable advanced contract analytics.Also meant for the development of "predictive contracts", which are a way for smart contracts to adapt over time to new situations
+This project involves steps for working with predictive contracting by extracting, embedding, and mapping opcodes to enable advanced contract analytics. Also meant for the development of "predictive contracts", which are a way for smart contracts to adapt over time to new situations
 
 ---
 
