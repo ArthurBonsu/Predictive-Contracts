@@ -1,4 +1,4 @@
-Predictive Contracts
+#Predictive Contracts
 This repository provides tools and scripts to analyze, extract, and embed opcodes from compiled smart contracts, enabling predictive and comparative contract analysis. It involves generating vocabularies, embeddings, and mappings between opcodes and embedded data representations.
 
 Project Structure
